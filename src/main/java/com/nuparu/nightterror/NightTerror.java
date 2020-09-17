@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import net.minecraft.util.math.vector.Vector3d;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,7 +25,6 @@ import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
@@ -56,7 +56,7 @@ public class NightTerror {
 
 	private void setup(final FMLCommonSetupEvent event) {
 		m_isDirectPathBetweenPoints = ObfuscationReflectionHelper.findMethod(PathNavigator.class, "func_75493_a",
-				Vec3d.class, Vec3d.class, int.class, int.class, int.class);
+				Vector3d.class, Vector3d.class, int.class, int.class, int.class);
 	}
 
 	@SubscribeEvent
@@ -123,8 +123,8 @@ public class NightTerror {
 								continue;
 							try {
 								boolean path = (boolean) (m_isDirectPathBetweenPoints.invoke(mob.getNavigator(),
-										new Vec3d(pos.getX(), pos.getY(), pos.getZ()),
-										new Vec3d(bed.getX(), bed.getY(), bed.getZ()), 1 , 1 , 1));
+										new Vector3d(pos.getX(), pos.getY(), pos.getZ()),
+										new Vector3d(bed.getX(), bed.getY(), bed.getZ()), 1 , 1 , 1));
 								if (!path)
 									continue;
 							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
@@ -132,7 +132,7 @@ public class NightTerror {
 								continue;
 							}
 							world.addEntity(mob);
-							Optional<Vec3d> vec = state.getBedSpawnPosition(EntityType.PLAYER, world, bed, null);
+							Optional<Vector3d> vec = state.getBedSpawnPosition(EntityType.PLAYER, world, bed, null);
 							mob.setPosition(vec.get().x, vec.get().y, vec.get().z);
 							mob.getLookController().setLookPosition(player.getPosX(),
 									player.getPosY() + (double) player.getEyeHeight(), player.getPosZ(),

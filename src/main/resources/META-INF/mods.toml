@@ -46,6 +46,6 @@ description='''Night Terror is a mod that brings back the possibility of being w
 [[dependencies.nightterror]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.15.2]"
+    versionRange="[1.16.1]"
     ordering="NONE"
     side="BOTH"
