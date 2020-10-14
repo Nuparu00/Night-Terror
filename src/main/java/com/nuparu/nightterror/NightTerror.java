@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import net.minecraft.util.math.vector.Vector3d;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,7 +25,7 @@ import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.IServerWorld;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
@@ -56,7 +57,7 @@ public class NightTerror {
 
 	private void setup(final FMLCommonSetupEvent event) {
 		m_isDirectPathBetweenPoints = ObfuscationReflectionHelper.findMethod(PathNavigator.class, "func_75493_a",
-				Vec3d.class, Vec3d.class, int.class, int.class, int.class);
+				Vector3d.class, Vector3d.class, int.class, int.class, int.class);
 	}
 
 	@SubscribeEvent
@@ -77,9 +78,9 @@ public class NightTerror {
 	@SubscribeEvent
 	public void onSleepFinished(SleepFinishedTimeEvent event) {
 		IWorld iw = event.getWorld();
-		if (iw instanceof World) {
-			World world = (World) event.getWorld();
-			MinecraftServer server = world.getServer();
+		if (iw instanceof IServerWorld) {
+			IServerWorld world = (IServerWorld) event.getWorld();
+			MinecraftServer server = world.getWorld().getServer();
 			if (server == null)
 				return;
 			List<ServerPlayerEntity> players = server.getPlayerList().getPlayers();
@@ -90,7 +91,7 @@ public class NightTerror {
 				BlockPos bed = player.getBedPosition().get();
 				BlockState state = world.getBlockState(bed);
 				boolean woke = false;
-				if (world.rand.nextDouble() > Config.terrorChance.get() * (getModifier(world))) {
+				if (world.getRandom().nextDouble() > Config.terrorChance.get() * (getModifier(world))) {
 					continue;
 				}
 				for (int x = -Config.checkRange.get(); x < Config.checkRange.get(); x++) {
@@ -104,13 +105,13 @@ public class NightTerror {
 							BlockPos pos = bed.add(x, y, z);
 							MobEntity mob = null;
 							while (mob == null && list.size() > 0) {
-								int index = world.rand.nextInt(list.size());
+								int index = world.getRandom().nextInt(list.size());
 								Optional<EntityType<?>> o = EntityType.byKey(list.get(index));
 								list.remove(index);
 								if (!o.isPresent())
 									continue;
 								EntityType<?> type = o.get();
-								Entity entity = type.create(world);
+								Entity entity = type.create(world.getWorld());
 								if (!(entity instanceof MobEntity)) {
 									LOGGER.warn(type.getName() + " is not an instance of MobEntity! Skipping.");
 									continue;
@@ -119,12 +120,12 @@ public class NightTerror {
 							}
 							if (mob == null)
 								return;
-							if (!ZombieEntity.isValidLightLevel(world, pos, world.rand))
+							if (!ZombieEntity.isValidLightLevel(world, pos, world.getRandom()))
 								continue;
 							try {
 								boolean path = (boolean) (m_isDirectPathBetweenPoints.invoke(mob.getNavigator(),
-										new Vec3d(pos.getX(), pos.getY(), pos.getZ()),
-										new Vec3d(bed.getX(), bed.getY(), bed.getZ()), 1 , 1 , 1));
+										new Vector3d(pos.getX(), pos.getY(), pos.getZ()),
+										new Vector3d(bed.getX(), bed.getY(), bed.getZ()), 1 , 1 , 1));
 								if (!path)
 									continue;
 							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
@@ -132,7 +133,7 @@ public class NightTerror {
 								continue;
 							}
 							world.addEntity(mob);
-							Optional<Vec3d> vec = state.getBedSpawnPosition(EntityType.PLAYER, world, bed, null);
+							Optional<Vector3d> vec = state.getBedSpawnPosition(EntityType.PLAYER, world.getWorld(), bed, player.func_242109_L(), null);
 							mob.setPosition(vec.get().x, vec.get().y, vec.get().z);
 							mob.getLookController().setLookPosition(player.getPosX(),
 									player.getPosY() + (double) player.getEyeHeight(), player.getPosZ(),
@@ -154,13 +155,13 @@ public class NightTerror {
 
 			}
 			if (!finished && Config.interruptSleep.get()) {
-				event.setTimeAddition(world.getDayTime());
+				event.setTimeAddition(world.getWorld().getDayTime());
 			}
 
 		}
 	}
 
-	public static double getModifier(World world) {
+	public static double getModifier(IServerWorld world) {
 		switch (world.getDifficulty()) {
 		default:
 		case PEACEFUL:
